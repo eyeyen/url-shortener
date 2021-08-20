@@ -1,0 +1,259 @@
+=============================================================================
+README
+=============================================================================
+
+Intro:
+    Basic URL Shortener
+Author:
+    Ian Blackman, 2021
+
+Description:
+    This application is a proof of concept of a URL Shortener Service
+
+API:
+    METHOD  ENDPOINT        RESPONSE
+    GET     /urls           All URLs
+    GET     /url/<ID>       Single url by ID
+    GET     /url/<SHORT>    Redirect to original URL via Shortened URL
+    POST    /urls           Create shortened URL with ID
+    DELETE  /urls/<ID>      Remove URL, returns 200 OK
+
+TODO:
+    1. Connect to database
+    2. PUT to update URL maybe
+    3. Custom URLs?
+    4. Check URL already exists (de-dupe)
+
+
+=============================================================================
+Requirements:
+=============================================================================
+python3
+git
+pip
+
+
+=============================================================================
+Setup:
+=============================================================================
+git clone
+python3 -m pip install flask
+python3 -m pip install requests
+
+
+=============================================================================
+Running:
+=============================================================================
+export FLASK_ENV=development
+flask run
+
+
+=============================================================================
+Testing:
+=============================================================================
+Test results will go here.
+
+=============================================================================
+1. All URLS:
+=============================================================================
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 362
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:16:38 GMT
+
+[
+  {
+    "id": 1, 
+    "short": "abtUM", 
+    "url": "https://unitedmasters.com/about"
+  }, 
+  {
+    "id": 2, 
+    "short": "ggLSt", 
+    "url": "https://store.google.com/US/?utm_source=hp_header&utm_medium=google_ooo&utm_campaign=GS100042&hl=en-US"
+  }, 
+  {
+    "id": 3, 
+    "short": "wksUL", 
+    "url": "https://en.wikipedia.org/wiki/URL_shortening"
+  }
+]
+
+
+=============================================================================
+2. Single URL by ID
+=============================================================================
+curl -i http://127.0.0.1:5000/url/1
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 80
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:19:35 GMT
+
+{
+  "id": 1, 
+  "short": "abtUM", 
+  "url": "https://unitedmasters.com/about"
+}
+
+
+=============================================================================
+2a. Single URL by ID out of scope/range
+=============================================================================
+curl -i http://127.0.0.1:5000/url/5    
+HTTP/1.0 415 UNSUPPORTED MEDIA TYPE
+Content-Type: application/json
+Content-Length: 36
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:22:38 GMT
+
+{
+  "error": "Index out of range"
+}
+
+
+=============================================================================
+3. Single URL by Short URL, expect to redirect (302)
+=============================================================================
+curl -i http://127.0.0.1:5000/url/wksUL
+HTTP/1.0 302 FOUND
+Content-Type: text/html; charset=utf-8
+Content-Length: 294
+Location: https://en.wikipedia.org/wiki/URL_shortening
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:20:31 GMT
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+
+
+=============================================================================
+3a: Invalid Short URL
+=============================================================================
+curl -i http://127.0.0.1:5000/url/wksUL
+HTTP/1.0 302 FOUND
+Content-Type: text/html; charset=utf-8
+Content-Length: 294
+Location: https://en.wikipedia.org/wiki/URL_shortening
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:20:31 GMT
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+
+
+=============================================================================
+4. Create Shortened URL, and re-list URLs to verify
+=============================================================================
+curl -i http://127.0.0.1:5000/urls -X POST -H 'Content-Type: application/json' -d '{"url":"https://www.ycombinator.com/"}'    
+HTTP/1.0 201 CREATED
+Content-Type: application/json
+Content-Length: 77
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:26:02 GMT
+
+{
+  "id": 4, 
+  "short": "wwnot", 
+  "url": "https://www.ycombinator.com/"
+}
+
+curl -i http://127.0.0.1:5000/urls                                                                                         
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 451
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:26:05 GMT
+
+[
+  {
+    "id": 1, 
+    "short": "abtUM", 
+    "url": "https://unitedmasters.com/about"
+  }, 
+  {
+    "id": 2, 
+    "short": "ggLSt", 
+    "url": "https://store.google.com/US/?utm_source=hp_header&utm_medium=google_ooo&utm_campaign=GS100042&hl=en-US"
+  }, 
+  {
+    "id": 3, 
+    "short": "wksUL", 
+    "url": "https://en.wikipedia.org/wiki/URL_shortening"
+  }, 
+  {
+    "id": 4, 
+    "short": "wwnot", 
+    "url": "https://www.ycombinator.com/"
+  }
+]
+
+
+=============================================================================
+5. Remove URL, also test removing something that does not exist
+=============================================================================
+curl -i http://127.0.0.1:5000/urls/wwnot -X DELETE                                                                        
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 27
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:28:19 GMT
+
+{
+  "success": "Removed"
+}
+
+# re-list here
+ curl -i http://127.0.0.1:5000/urls                
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 362
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:28:23 GMT
+
+[
+  {
+    "id": 1, 
+    "short": "abtUM", 
+    "url": "https://unitedmasters.com/about"
+  }, 
+  {
+    "id": 2, 
+    "short": "ggLSt", 
+    "url": "https://store.google.com/US/?utm_source=hp_header&utm_medium=google_ooo&utm_campaign=GS100042&hl=en-US"
+  }, 
+  {
+    "id": 3, 
+    "short": "wksUL", 
+    "url": "https://en.wikipedia.org/wiki/URL_shortening"
+  }
+]
+
+=============================================================================
+5a Test removing something that does not exist
+=============================================================================
+➜  url-shortener curl -i http://127.0.0.1:5000/urls/test -X DELETE
+HTTP/1.0 415 UNSUPPORTED MEDIA TYPE
+Content-Type: application/json
+Content-Length: 37
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:28:34 GMT
+
+{
+  "error": "Short URL not found"
+}
+
+
+curl -i http://127.0.0.1:5000/urls/test -X DELETE  
+HTTP/1.0 415 UNSUPPORTED MEDIA TYPE
+Content-Type: application/json
+Content-Length: 37
+Server: Werkzeug/2.0.1 Python/3.8.6
+Date: Fri, 20 Aug 2021 17:15:52 GMT
+
+{
+  "error": "Short URL not found"
+}
