@@ -36,7 +36,7 @@ pip
 =============================================================================
 Setup:
 =============================================================================
-git clone
+git clone https://github.com/eyeyen/url-shortener
 python3 -m pip install flask
 python3 -m pip install requests
 
